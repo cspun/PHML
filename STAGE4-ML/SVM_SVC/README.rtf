@@ -1,0 +1,79 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1561\cocoasubrtf200
+{\fonttbl\f0\fnil\fcharset0 Menlo-Regular;\f1\fnil\fcharset0 Menlo-Italic;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 1) SVC\
+======\
+Note: a preprocessing step is required before the input features csv files can be read - requires sparse format\
+\
+- Features2libsvm.R\
+Required packages: e1071 and SparseM\
+> Input: Read in the csv file\
+> Output: separate .txt files named \'93out-train.txt\'94 and \'93out-test.txt\'94 in sparse format required by libsvm package and liblinear package\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \ul \ulc0 Steps involved:\ulnone \
+1) Divide the read-in csv data into training set and test set ( set seed to ensure reproducibility, randomly sample in proportion of 80-20 for train and test set)\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\fs22 \cf0 * This proportion can be altered by simply sampling a different number of training samples from the entire dataset
+\fs24 \
+\
+2) Convert the data into sparse format using functions as.matrix.csr into separate .txt files.\
+\
+3) SVC-LIBLINEAR (Filesfor_s0, Filesfor_s2, Filesfor_S5)\
+More detailed information can be found in the original README file provided from the packages \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f1\i \cf0 *The following is described for s0 but the same is that for other linear classifiers available e.g. s2, s5*\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\i0 \cf0 \
+i) Check that data is in correct format using checkdata.py (optional)\
+ii) Using the command line: Run the following code in the scripts in order:\
+-cd Filesfor_s0 (check pwd is correct, containing the required scripts to be run)\
+-liblinear-cv-s0.sh or liblinear-cv_scale-s0.sh [involves training data only]\
+\ul Purpose:\ulnone  performs 5-fold CV for the selected SVC to choose the best parameter C to be used ( -v 5 selects the number of folds used in CV)\
+\
+\ul Codes:\ulnone \
+> ./liblinear-cv-s0.sh> liblinear-cv-s0_output.txt OR\
+> ./liblinear-cv_scale-s0.sh> liblinear-cv_scale-s0_output.txt (used when scaling is required to be performed on input features)\
+\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\fs22 \cf0 *Note: \'93> *output.txt\'94 helps to port the output from the codes run in the script into the txt file
+\fs24 \
+\
+iii) Using the optimal value of C found in the previous step, modify the value cv_para=? accordingly then run it again using the following codes\
+\
+-CVoutout-s0.sh or CVoutput-s0-scale.sh \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \ul Purpose:\ulnone  Trains the model using the out-train.txt and the value of c found from CV then predicts on out-test.txt. Output predictions stored in file output.txt\
+\ul Codes:\ulnone \
+> ./CVoutout-s0.sh >Classoutput-s0-output.txt \
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\fs22 \cf0 *Note: \'93> *output.txt\'94 helps to port the displayed codes during the running of the script into the txt file
+\fs24 \
+\
+iv) Evaluate the class predictions using the R script <Classoutput-accuracy-evaulation-s0.R>\
+\
+Reads in the output.txt file containing class predictions produced by predict function in <CVoutout-s0.sh>\
+Class-specific prediction accuracy can be obtained, cross-tabulated class predictions with true labels using confusion matrix\
+\
+*Alternatively, the \'93confusionMatrix\'94 function in package \'93caret\'94 can be loaded/ used instead of \'93table(pred, true)\'94 to obtain all the required output with a single function.\
+\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 1) SVM\
+======\
+\
+The steps and functions are near identical in libsvm package. The key difference is that the parameters tuned are different if the gaussian kernel radial classifier is used. An additional parameter is tuned/ required (g). The remaining steps follow closely to that introduced earlier.\
+\
+For a more detailed walk-through, one may refer to libsvmguide.pdf: A practical guide to support vector classification by Chih-Wei Hsu et al. The paper documents caveats to take note of when using the libsvm package such as the tuning of parameters etc under the section of \'93Examples of the Proposed Procedure\'94.\
+}

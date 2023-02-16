@@ -1,0 +1,287 @@
+---
+title: "Jaccard Similarity measure BOE"
+output: html_notebook
+---
+Latest Edit: 18/2/18
+A Function to create similarity index to compare barcodes from protein A and B
+Formula based on paper: A topological Similarity Measure for proteins
+input: n*3 matrix of birth and death of bars/ intervals from protein A vs B
+n contains ALL intervals of dim0,dim1,dim2 (column 1 indicates the dimension)
+To create the main function, 2 helper functions are used: colMax, barcode_overlap
+
+Helper function 1:
+```{r}
+colMax=function(Mat){
+  r=dim(Mat)[1]
+  c=dim(Mat)[2]
+  column_max=vector("numeric",c)
+  for (i in 1:c)
+    column_max[i]=max(Mat[,i])
+  return(column_max)
+}
+```
+Helper function 2:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Input: A fixed interval index i a_i from A
+A is nx3 matrix of birth and death of intervals in dim 0/1/2
+B is mx3 matrix of birth and death of intervals in dim 0/1/2
+
+Output:
+S_BOE values which tries to match EACH bar in A to B and vice versa
+forming the numerator:overlap between A's and B's aNb, denominator: union between A's and B's: i=1,...,n and j=1,...,m 
+an m*n matrix called overlap_a2b is created with (j,i) entries involving a_i and b_j
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+input: an a_i in A and B(m*3 matrix of dim 0/1/2 and start, end)
+output: a m*1 vector of case vector: the overlap over union of a_i and B 
+```{r}
+case_vector=function(a,B){
+  #remove the entries in dim0 that exceeds max filtration value( ie the longest B0 bar)
+    #A=A[is.finite(rowSums(A)),]
+  #a is ONE interval in dim 0/1/2 from A( a row in A)
+    B=B[is.finite(rowSums(B)),]
+    #reinitialise after removing bars that exceed max filtration value
+    #num_A=nrow(A)
+    num_B=nrow(B)#m
+    a_start=a[2]
+    a_end=a[3]
+#initialise vectors used outside for loops
+  case_vec1=matrix(rep(NA,num_B),num_B,1)
+  case_vec2=matrix(rep(NA,num_B),num_B,1)
+  case_vec3=matrix(rep(NA,num_B),num_B,1)
+  case_vec4=matrix(rep(NA,num_B),num_B,1)
+  case_index=matrix(rep(NA,num_B),num_B,1)#m*1 vector of case index
+  #sup_overlap_A2B=vector('numeric',num_A)
+  #case_MAT=matrix(rep(NA,num_B*num_A),num_B,num_A)
+  #A=A[,-1]#since col 1 is the dim
+  #B=B[,2:3]#since col 1 is the dim
+  #create indicator variable vectors
+  case_vec1=a_start>=B[,2]#returns m*1 vector
+  case_vec2=a_start<B[,2]
+  case_vec3=a_end>=B[,3]
+  case_vec4=a_end<B[,3]
+  case_vec5=a_end<=B[,2]
+  case_vec6=a_start>=B[,3]
+  case_vec7=a_end>B[,2]
+  case_vec8=a_start<B[,3]
+  #case1:vec1*vec3=1
+  #case2:vec1*vec4=1
+  #case3:vec2*vec3=1
+  #case4:vec2*vec4=1
+  #case5:vec5 OR vec6=1(no overlap)
+  #elementwise in vectors
+  #case_index[(case_vec6+case_vec5)==1]=5
+  case_index=(1*case_vec2*case_vec3*case_vec7*case_vec8)+(2*case_vec4*case_vec7*case_vec8*case_vec2)+(3*case_vec7*case_vec8*case_vec3*case_vec1)+(4*case_vec1*case_vec4*case_vec7*case_vec8)+5*(case_vec6)+5*(case_vec5)#returns m*1 matrices with entries 1/2/3/4/5
+    return(case_index)
+}
+```
+Test cases:
+CASE 1: one-dimensional non empty barcodes ( dim0/1/2) to just test barcode_overlap
+```{r}
+#A=matrix(c(0,1.1,1.44,0,0.1,2),2,3,byrow=T)
+#B=matrix(c(0,1,1.4,0,0,2.5), nrow = 2, ncol = 3,byrow=T)
+A=matrix(c(0,1,2,0,0,2),2,3,byrow=T)
+B=matrix(c(0,1.5,5,0,1.2,1.5,0,1.2,2.5,0,0.5,1.2,0,0.5,2.5,0,0.5,0.8,0,2.5,3), nrow = 7, ncol = 3,byrow=T)
+A
+B
+case_vector(A[1,],B)
+apply(A,1,case_vector,B)
+#case_valMAT(A,B)
+```
+
+function that repeats for every a_i in A
+```{r}
+#declare B first B
+case_MAT=function(A,B){
+  #A is n*3
+  #B is m*3
+    A=A[is.finite(rowSums(A)),]
+  #a is ONE interval in dim 0/1/2 from A( a row in A)
+    B=B[is.finite(rowSums(B)),]
+    num_A=nrow(A)#n
+    num_B=nrow(B)#m
+    #create case matrix using case_vector function
+  case_indexMAT=apply(A,1,case_vector,B)#Apply case_vector to every row in A to give:M*n matrix of case_index
+    A=A[,-1]#since col 1 is the dim
+    B=B[,-1]#since col 1 is the dim
+  case_valMAT=matrix(rep(NA,num_B*num_A),num_B,num_A)#m*n matrix of case values corr to index( same dimension as case_index)
+  A_1=A[(which(case_indexMAT==1,arr.ind = T)[,2]),,drop=F]
+  A_2=A[(which(case_indexMAT==2,arr.ind = T)[,2]),,drop=F]
+  A_3=A[(which(case_indexMAT==3,arr.ind = T)[,2]),,drop=F]
+  A_4=A[(which(case_indexMAT==4,arr.ind = T)[,2]),,drop=F]
+  
+  B_1=B[(which(case_indexMAT==1,arr.ind = T)[,1]),,drop=F]
+  B_2=B[(which(case_indexMAT==2,arr.ind = T)[,1]),,drop=F]
+  B_3=B[(which(case_indexMAT==3,arr.ind = T)[,1]),,drop=F]
+  B_4=B[(which(case_indexMAT==4,arr.ind = T)[,1]),,drop=F]
+  #j=1,...,m is the index for the rows
+  #i=1,...,n is the index for the columns
+  case_valMAT[cbind(c(which(case_indexMAT==5,arr.ind = T)[,1]),c(which(case_indexMAT==5,arr.ind =T)[,2]))]=0 
+  case_valMAT[cbind(c(which(case_indexMAT==4,arr.ind = T)[,1]),c(which(case_indexMAT==4,arr.ind =T)[,2]))]=c((A_4[,2]-A_4[,1])/(B_4[,2]-B_4[,1]))
+   case_valMAT[cbind(c(which(case_indexMAT==3,arr.ind = T)[,1]),c(which(case_indexMAT==3,arr.ind =T)[,2]))]=c((B_3[,2]-A_3[,1])/(A_3[,2]-B_3[,1]))
+    case_valMAT[cbind(c(which(case_indexMAT==2,arr.ind = T)[,1]),c(which(case_indexMAT==2,arr.ind =T)[,2]))]=c((A_2[,2]-B_2[,1])/(B_2[,2]-A_2[,1]))
+     case_valMAT[cbind(c(which(case_indexMAT==1,arr.ind = T)[,1]),c(which(case_indexMAT==1,arr.ind =T)[,2]))]=c((B_1[,2]-B_1[,1])/(A_1[,2]-A_1[,1]))
+
+  #case_valMAT[which(case_indexMAT==4,arr.ind = T)]=(A_4[,2]-A_4[,1])/(B_4[,2]-B_4[,1])
+  #case_valMAT[c(as.numeric(which(case_indexMAT==3,arr.ind = T)[,1])),c(as.numeric(which(case_indexMAT==3,arr.ind = T)[,2])),drop=F]=(B_3[,2]-A_3[,1])/(A_3[,2]-B_3[,1])
+  #case_valMAT[c(as.numeric(which(case_indexMAT==2,arr.ind = T)[,1])),c(as.numeric(which(case_indexMAT==2,arr.ind = T)[,2])),drop=F]=(A_2[,2]-B_2[,1])/(B_2[,2]-A_2[,1])
+  #case_valMAT[c(as.numeric(which(case_indexMAT==1,arr.ind = T)[,1])),c(as.numeric(which(case_indexMAT==1,arr.ind = T)[,2])),drop=F]=(B_1[,2]-B_1[,1])/(A_1[,2]-A_1[,1])
+  
+  sup_overlap_A2B=(colMax(case_valMAT))# for checking: vector of num_A containing the "sup" after running over all j in B    
+  overlap_A2B=sum((colMax(case_valMAT)))
+  Tcase_valMAT=t(case_valMAT)
+  overlap_B2A=sum((colMax(Tcase_valMAT)))
+  S_BO=(overlap_A2B+overlap_B2A)/(num_A+num_B)
+  return(S_BO)
+  #return(num_A)
+  #return(case_valMAT)
+  #return(list(A,B))
+}
+```
+Test:
+```{r}
+A=matrix(c(0,1,2,0,0,2),2,3,byrow=T)
+B=matrix(c(0,1.5,5,0,1.2,1.5,0,1.2,2.5,0,0.5,1.2,0,0.5,2.5,0,0.5,0.8,0,2.5,3), nrow = 7, ncol = 3,byrow=T)
+A
+B
+apply(A,1,case_vector,B)
+case_MAT(A,B)
+```
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Main function: overall_similarity
+Input:A_barcodes & B_barcodes: (n1+n2+n3)*3 set of B and D: col 1 is the dimension index(0/1/2) col2 is the Birth and col3 is the death
+Note: indexing in R starts from 0: need to use i+1 to refer to cell 1 etc
+Output: a single value S_BOE that accounts for all 3 dimensions and empty barcode cases with range in [0,1]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+```{r}
+overall_similarity=function(A_barcodes,B_barcodes){
+  SBOE=c(rep("NA",3))
+  for (i in 0: 2){
+    #Case 1: A's dim i and B's dim i both non empty
+    if (sum(A_barcodes[,1]==i)==0& sum(B_barcodes[,1]==i)==0 )
+      SBOE[i+1]=1
+    #Case 2: A's dim i non empty and B's dim i non empty
+    else if(sum(A_barcodes[,1]==i)!=0 & sum(B_barcodes[,1]==i)==0)
+      SBOE[i+1]=0
+    #Case 3: B's dim i non empty and A's dim i non empty
+    else if (sum(A_barcodes[,1]==i)==0 & sum(B_barcodes[,1]==i)!=0)
+      SBOE[i+1]=0
+    #Case 4:A's dim i and B's dim i both non empty
+    else 
+      SBOE[i+1]=case_MAT(A_barcodes[A_barcodes[,1]==i, ,drop=F],B_barcodes[B_barcodes[,1]==i, ,drop=F])
+  }
+  
+  #return(SBOE)
+  #output_sim=((SBOE))#for testing purposes to see the entries of similarity for each dim before summing
+  output_sim=as.numeric(SBOE)
+  return(mean(output_sim))
+}
+```
+
+CASE 2: three-dimensional identical non empty barcodes ( dim0/1/2)
+```{r}
+A=matrix(c(0,0,1,0,0,1.5,1,1.5,2),3,3,byrow=T)
+B=matrix(c(0,0,1,0,0,1.5,1,1.5,2),3,3,byrow=T)
+case_MAT(B,B)
+```
+CASE 3: three-dimensional identical non empty barcodes ( dim0/1/2)
+```{r}
+A=matrix(c(0,0,1,0,0,1.5,1,1.5,2,2,2,2.3),4,3,byrow=T)
+B=matrix(c(0,0,1,0,0,2),2,3,byrow=T)
+```
+Testing out functions created:
+```{r}
+overall_similarity(A,B)
+```
+Note: to debug, return the intermediate outputs within each function/ helper function to find out which part went"wrong"
+Common mistakes/ bugs found:
+1) wrong indexing ( should start from 1, hence i+1 for i=0,1,2)
+2) initalisation: set as NA to detect errors more easily
+3) output as character: use  to take sum/ numeric
+4)Take note to cover all cases: e.g. cover cases of EQUAL (esp in barcode_overlap) function
+5) Case 2: error of: Error in rep(NA, num_B * num_A) : invalid 'times' argument
+due to NULL*NULL: nrow((B[B[,1]==1,-1]))=NULL since it is no longer 2 dimensional 
+This error is only encountered for vectors that are misrepresented as column vector: dimensions are messed up: 
+use > B[B[,1]==1,-1,drop=F] to prevent change in dimensions
+CHECKS CLEAREDDDDD YAY 2Feb 2018
+6) Unresovled error: overall_similarity(A,B)
+Error in apply(A, 1, case_vector, B) : dim(X) must have a positive length 18Feb 2018
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Next, create function that loops over all training sample to create a similarity btwn proteins within training sample:
+Intermediate functions used: overall_similarity which compares the pairwise similarity between each protein
+Input:Files are all the training samples each with their intervals (n1+n2+n3 by 3)
+Output: A symetric similarity matrix which has diagonals 1 ( self similarity) and off diagonals (i,j) is pairwise similarity between protein_i and protein_j
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+```{r}
+training_sMAT=function(filenames){
+  n_files=length(filenames)
+  #read in the files sequentially
+  #initialise the similarity matrix output:
+  sMAT=matrix(rep(NA,(n_files*n_files)),n_files,n_files)
+  for (i in 2: n_files){
+    for (j in 1:(i-1)){
+      sMAT[i,j]=overall_similarity(filenames[[i]],filenames[[j]])# lower trianglular
+    }
+  }
+    sMAT_lower=sMAT #save a copy in case
+    #Assign value to diagonals:
+    diag(sMAT)=rep(1,n_files)
+    #replace upper triangular w lower triangular elements (since symmetric)
+    ind<-upper.tri(sMAT)
+    sMAT[ind]<-t(sMAT)[ind]
+    return(sMAT)
+}
+```
+Test:
+CASE 4: three-dimensional identical non empty barcodes ( dim0/1/2)
+```{r}
+A=matrix(c(0,0,1,0,0,1.5,1,1.5,2,2,2,2.3),4,3,byrow=T)
+B=matrix(c(0,0,1,0,0,2),2,3,byrow=T)
+C=matrix(c(0,0,1,0,0,2),2,3,byrow=T)
+D=matrix(c(0,0,1,0,0,1.5,1,1.5,2,2,2,2.3),4,3,byrow=T)
+E=matrix(c(0,0,1,0,0,1.5,1.3,4,2,2,2,2.3),4,3,byrow=T)
+```
+Treat Hypotherical data: A B C D E F as "files" in function training_sMAT
+```{r}
+filenames=list(A,B,C,D,E)
+training_sMAT(filenames)
+```
+Testing out with PDB files in the list:
+```{r}
+#read in all "interval containing" csv files
+#path="~/Desktop/Rfiles-SEQ/StageI-CompareIntervals/RDC-TDA-INTERVALS-RIPS20_ALPHA/RDC-TDA_INTERVALS-ALPHA"
+path="~/Desktop/Rfiles-SEQ-AB/stageII-SimilarityComputation/REDO"
+setwd(path)
+fileNames <- Sys.glob("~/Desktop/Rfiles-SEQ-AB/stageII-SimilarityComputation/REDO/RDC-TDA_ALPHA-JACCARD/RDC-TDA-INTERVALS-ALPHA/Alpha_scaled*.csv")
+#create a list with intervals
+listNames=lapply(fileNames,read.csv)
+#overall_similarity(as.matrix(interval.ls[[1]]),as.matrix(interval.ls[[2]]))
+#barcode_overlap(head(tmp1[tmp1[,1]==0,]),head(tmp2[tmp2[,1]==0,]))
+```
+Input: intervals.ls(list of 9 protein's 3 dimensional intervals)- similarity between R form proteins 
+```{r}
+rform_tmp=training_sMAT(interval.ls)
+```
+View the similarity matrix:
+```{r}
+rform_tmp
+```
+Combining intervals for R and T: input= interval.ls.R and interval.ls.T
+```{r}
+RTlist=append(interval.ls.R,interval.ls.T)
+rNtform_tmp=training_sMAT(RTlist)
+rNtform_tmp
+write.csv(rNtform_tmp,"rNtform14_alpha_tmp.csv")
+```
+Import intervals stored in csv to list:
+```{r}
+library(tictoc)
+tic()
+Jaccard_tmp2=training_sMAT(listNames)
+Jaccard_tmp2
+#write.csv(fileNames,"RT_alpha_filenames.csv")
+#write.csv(Jaccard_tmp,"Jaccard_alpha_RT.csv")
+toc()
+```
+
+

@@ -1,0 +1,66 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1561\cocoasubrtf200
+{\fonttbl\f0\fnil\fcharset0 Menlo-Regular;\f1\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red255\green255\blue255;\red28\green0\blue207;
+}
+{\*\expandedcolortbl;;\csgenericrgb\c0\c0\c0;\csgray\c100000;\csgenericrgb\c11000\c0\c81000;
+}
+\paperw11900\paperh16840\margl1440\margr1440\vieww13400\viewh10360\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 2) TREE-BASED \
+=============\
+*no preprocessing step required- simply dividing the original predictor space \
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \ul \ulc0 Steps involved:\ulnone \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 START:\
+Read in single data file in csv format from the TFR either barcode statistics or binned features \
+\
+Divide the data into training and test data \
+*Note: for Binned features, simply run source(\'93./ESTF_dataload.R\'94). The codes in Features_dataload.R ,Features2TREE.R, Features2RF.R and Features2BOOSTINGZHU.R runs similarly.\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \ul \ulc0 i) Single (pruned) tree codes in <ESTF2TREE.R>\
+package used: tree\ulnone \
+1) Using only train.dat, construct a single classification tree (cls. tree) with function tree from package \'93tree\'94.\
+2) Prune the tree cls.tree using CV (cv.tree and prune.tree) and use it to predict classes for samples in test.dat\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \ul \ulc0 \
+\
+ii) Random Forest codes in <ESTF2RF.R>\
+package used: randomForest\
+\ulnone 1) Specify the mtry_val as 
+\fs22 \cf2 \cb3 floor(sqrt(ncol(train.dat)\cf4 -1\cf2 )) \
+*the value m=sqrt(p) is used in practice where p is the number of features/ columns in the training file excluding class labels (-1)\
+
+\fs24 2) \cf0 \cb1 Using only train.dat and function randomForest from package \'93randomForest\'94 with a random mtry_val number of predictors per split and aggregate results from ntree=1000 number of independent trees in total. Other parameters used are default values unless otherwise specified. ( use ?randomForest for more help and information)\
+3) Predict the classes of samples in test.dat using the rf.cls classifier constructed earlier in step 4.\
+\
+\ul \ulc0 iii) Boosting codes in <ESTF2BOOSTINGZHU.R>\
+Package used: adabag\ulnone \
+1) specify the m_final value and max_depth value to be used\
+
+\fs22 \cf2 \cb3 *the value m_final refers to the maximum number of iterations used to sequentially fit the errors via boosting and max_depth refers to the number of splits used each time (max_depth=1 refers to stumps)\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\fs24 \cf0 \cb1 2) Using only train.dat and function boosting from package \'93adabag\'94, construct the boosted tree model by sequentially fitting for the errors and perform better at classifying harder samples\
+3) Prune the ensemble by using when there is noticeable increase in training/testing error after a certain number of iterations (newmfinal)\
+Where the test error achieved is the lowest based on the plot would be the best number of iterations to be used to prevent overfitting of the errors.\
+e.g. \
+> 
+\fs22 \cf2 \cb3 data.boosting <- boosting(classLab~., \'85)
+\fs24 \cf0 \cb1 \
+>
+\fs22 \cf2 \cb3  predict.boosting(data.boosting, newdata = test.dat,
+\f1\fs24 \cf0 \cb3 \
+\pard\tx543\pardeftab543\pardirnatural\partightenfactor0
+
+\f0\fs22 \cf2                                 newmfinal = newmfinal)
+\fs24 \cf0 \cb1 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 4) Predict the classes of samples in test.dat using the pruned data.boosting classifier constructed earlier in the previous step.\
+\
+END:\
+construct the Confusion Matrix and compute the class specific accuracies using function ConfusionMatrix from \'93caret\'94 package.}

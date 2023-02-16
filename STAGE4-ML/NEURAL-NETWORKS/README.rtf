@@ -1,0 +1,70 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1561\cocoasubrtf200
+{\fonttbl\f0\fnil\fcharset0 Menlo-Regular;\f1\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red255\green255\blue255;\red28\green0\blue207;
+\red0\green116\blue0;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\csgenericrgb\c0\c0\c0;\csgray\c100000;\csgenericrgb\c11000\c0\c81000;
+\csgenericrgb\c0\c45600\c0;\cssrgb\c0\c0\c0;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 3) NEURAL NETWORKS\
+==================\
+*preprocessing steps such as scaling or removal of variables with near zero variance may be performed depending on the datasets/ features used*\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \ul \ulc0 Steps involved:\ulnone \
+START:\
+Read in single data file in csv format from the TFR either barcode statistics or binned features \
+\
+Divide the data into training and test data \
+*Note: for Binned features, simply run source(\'93./ESTF_dataload.R\'94) or source(\'93./ESTF_NN_dataload.R\'94). The corresponding codes for TFR 1: Barcodes statistics (Features2*.R) runs similarly.\
+\
+\ul i) Repeated NN codes in <ESTF2CVNNET.R>\
+package used: nnet\ulnone \
+* run source(\'93./ESTF_NN_dataload.R\'94) which differs in the format of the label compared to source(\'93./ESTF_NN_dataload.R\'94) used for deepnet in keras\
+1) Prespecify the number of units to be used in the single hidden layer.\
+2) Using only train.dat, perform repeated NN (nrep=30 repeats) for the best neural networks (with lowest loss) for single hidden layer constructed. \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\fs22 \cf0 * Note: \cf2 \cb3 linout = F is used for classification problem, for regression problem, linout=T\
+
+\fs24 \cf0 \cb1 \
+3) Predict the classes of samples in test.dat using the classifier constructed earlier using function nn.rep in step 2.\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \ul \ulc0 i) Deepnet codes in <ESTF2CVNNET.R>\
+package used: nnet\ulnone \
+* run source(\'93./ESTF_NN_dataload.R\'94) for deepnet in keras\
+Note: \
+>
+\fs22 \cf2 \cb3 index <- sample(\cf4 \cb3 360\cf2 \cb3 ,\cf4 \cb3 360\cf2 \cb3 )
+\f1\fs24 \cf0 \cb3 \
+\pard\tx543\pardeftab543\pardirnatural\partightenfactor0
+
+\f0\fs22 \cf2 >train.dat <- train.dat[index,] \cf5 #shuffle the training samples\
+\cf6 is used to shuffle the training data for the validation split in later steps: else only the last class in the 0.2 portion of the train data will be used in the validation set \
+* Labels and features stored separately unlike in repeated NN\
+
+\fs24 \cf0 \cb1 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 1) Preprocessing steps such as converting class labels to binary variables format done using to_categorical function in keras package OR normalize\
+2) Prespecify the number of units (X) to be used inthe each hidden layer in the network architecture of Input-X-X-2X-output used.\
+3) Prespecify the dropout rate to be used and the activation function from layer to layer.\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\fs22 \cf0 * input_shape and units in the last output layer is pre-determined by the problem e.g. the number of features in the data gives the size of units in input layer while the number of output classes in the classification problem gives the latter. e.g. multi class classification problem where # of classes =3 results in 3 units in output layer. The activation function is also dependent on the classification problem encountered e.g. softmax (multi class classification) vs sigmoid( 2 class classification)\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\fs24 \cf0 4) Specify the optimiser to be used e.g. sgd or adam ( refer to keras help documentation for more options)\
+5) Using only traindata (no labels), construct the model with the prespecified network architecture. ( epoch size and batch size can be also adjusted accordingly)\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\fs22 \cf2 \cb3 6)
+\fs24 \cf0 \cb1  Predict the classes of samples in testdata(no labels) using the classifier constructed earlier and cross tabulate with the true labels using steps in END.\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \
+END:\
+construct the Confusion Matrix and compute the class specific accuracies using function ConfusionMatrix from \'93caret\'94 package.\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \
+}
