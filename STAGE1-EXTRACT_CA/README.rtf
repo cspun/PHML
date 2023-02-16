@@ -1,0 +1,27 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1561\cocoasubrtf200
+{\fonttbl\f0\fnil\fcharset0 Menlo-Regular;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 Purpose: Downloading of pdb files from online database and extracting required information\
+\
+There are 2 key files required to download pdb files automatically from an online source e.g. the SCOPe database\
+In the demonstrated example, pdb files were downloaded individual list proteins from all-alpha, all-beta and mixed alpha-beta classes. \
+In folder titled DL_PDB, the following can be found : \
+1) alpha_list: the names of all pdb files to be downloaded for the all-alpha class\
+2) download_alpha_raw.sh or download_alpha_raw_2.sh: the script to be executed on the command line for the download\
+( to execute simply type ./download_alpha_raw.sh, if there are issues with permissions, type chmod u+x ./download_alpha_raw.sh)\
+Make sure that the pwd is the file containing alpha_list and download_alpha_raw.sh\
+\
+Note: the \'93location\'94 refers to the website/ online database and the files are downloaded sequentially (according to the counter \'93a\'94) to the location in \'93name\'94. alpha_list is port-in using \'93<\'93\
+\
+The difference between the 2 download_alpha_raw*.sh is simply the name of file saved as either A_raw_<index>.pdb or A_raw_<pdb name>.pdb \
+\
+The same is done for beta_list, al-pl-b_list etc.\
+\
+3) After downloading the required raw pdb files, depending on the atoms to be extracted e.g. alpha carbons only, an additional preprocessing step is performed using codes in poc.py.\
+* save the raw pdb files in the same folder as poc.py e.g. see folder InputFIlePDB_RAW. Then execute on command line with \'93python ./poc.py\'94. ( ensure that pwd is the folder e.g. InputFIlePDB_RAW)\
+\
+4) The codes in poc.py will help to extract only alpha carbons in other words lines in the pdb files with \'93ATOM\'94 and \'93CA\'94 in columns 13 to 15. The edited/ extracted lines are then saved in the new file name indicated by _CA in the new file name.}
